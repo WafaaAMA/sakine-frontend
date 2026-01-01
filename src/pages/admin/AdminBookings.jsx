@@ -6,8 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Calendar,
-    CheckCircle,
-    XCircle,
     Clock,
     Search,
     Eye,
@@ -22,146 +20,81 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // أضفنا useEffect [cite: 2026-01-01]
 import { useToast } from "@/hooks/use-toast";
-import property1 from "@/assets/property-1.jpg";
-import property2 from "@/assets/property-2.jpg";
-import property3 from "@/assets/property-3.jpg";
-
-// Mock Data
-const mockBookings = [
-    {
-        id: "BK-001",
-        property: "Modern Downtown Apartment",
-        image: property1,
-        renter: "Alice Cooper",
-        owner: "John Smith",
-        checkIn: "2024-02-15",
-        checkOut: "2024-02-20",
-        status: "Confirmed",
-        amount: "1,250",
-        paymentStatus: "Paid",
-    },
-    {
-        id: "BK-002",
-        property: "Cozy Studio Near Park",
-        image: property2,
-        renter: "Bob Dylan",
-        owner: "Sarah Johnson",
-        checkIn: "2024-03-01",
-        checkOut: "2024-03-05",
-        status: "Pending",
-        amount: "800",
-        paymentStatus: "Pending",
-    },
-    {
-        id: "BK-003",
-        property: "Luxury Penthouse Suite",
-        image: property3,
-        renter: "Charlie Watts",
-        owner: "Michael Brown",
-        checkIn: "2024-01-10",
-        checkOut: "2024-01-15",
-        status: "Completed",
-        amount: "3,500",
-        paymentStatus: "Paid",
-    },
-    {
-        id: "BK-004",
-        property: "Family Home with Garden",
-        image: property1,
-        renter: "David Bowie",
-        owner: "Emily Davis",
-        checkIn: "2024-02-05",
-        checkOut: "2024-02-12",
-        status: "Cancelled",
-        amount: "1,400",
-        paymentStatus: "Refunded",
-    },
-    {
-        id: "BK-005",
-        property: "Waterfront Condo",
-        image: property2,
-        renter: "Elton John",
-        owner: "David Wilson",
-        checkIn: "2024-04-10",
-        checkOut: "2024-04-17",
-        status: "Confirmed",
-        amount: "2,100",
-        paymentStatus: "Paid",
-    },
-];
-
-const stats = [
-    {
-        label: "Total Bookings",
-        value: "156",
-        icon: CalendarDays,
-        iconColor: "text-blue-500",
-        bgColor: "bg-blue-50",
-    },
-    {
-        label: "Confirmed",
-        value: "42",
-        icon: CheckCircle,
-        iconColor: "text-green-500",
-        bgColor: "bg-green-50",
-    },
-    {
-        label: "Pending",
-        value: "15",
-        icon: Clock,
-        iconColor: "text-orange-500",
-        bgColor: "bg-orange-50",
-    },
-    {
-        label: "Cancelled",
-        value: "8",
-        icon: Ban,
-        iconColor: "text-red-500",
-        bgColor: "bg-red-50",
-    },
-];
-
-const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-        case "confirmed":
-            return "bg-green-100 text-green-700 border-green-200";
-        case "pending":
-            return "bg-orange-100 text-orange-700 border-orange-200";
-        case "completed":
-            return "bg-blue-100 text-blue-700 border-blue-200";
-        case "cancelled":
-            return "bg-red-100 text-red-700 border-red-200";
-        default:
-            return "bg-slate-100 text-slate-700 border-slate-200";
-    }
-};
+import axios from "axios"; // استدعاء axios [cite: 2026-01-01]
 
 const AdminBookings = () => {
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
-    const [bookings, setBookings] = useState(mockBookings);
+    const [bookings, setBookings] = useState([]); // المصفوفة أصبحت فارغة في البداية [cite: 2026-01-01]
+
+    // 1. جلب البيانات من السيرفر [cite: 2026-01-01]
+    const fetchBookings = async () => {
+        try {
+            const res = await axios.get('http://localhost:5000/api/bookings');
+            setBookings(res.data);
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to fetch bookings" });
+        }
+    };
+
+    useEffect(() => {
+        fetchBookings();
+    }, []);
+
+    // 2. حساب الإحصائيات ديناميكياً [cite: 2026-01-01]
+    const stats = [
+        {
+            label: "Total Bookings",
+            value: bookings.length,
+            icon: CalendarDays,
+            iconColor: "text-blue-500",
+            bgColor: "bg-blue-50",
+        },
+        {
+            label: "Confirmed",
+            value: bookings.filter(b => b.status === 'confirmed').length,
+            icon: Calendar,
+            iconColor: "text-green-500",
+            bgColor: "bg-green-50",
+        },
+        {
+            label: "Pending",
+            value: bookings.filter(b => b.status === 'pending').length,
+            icon: Clock,
+            iconColor: "text-orange-500",
+            bgColor: "bg-orange-50",
+        },
+        {
+            label: "Cancelled",
+            value: bookings.filter(b => b.status === 'cancelled').length,
+            icon: Ban,
+            iconColor: "text-red-500",
+            bgColor: "bg-red-50",
+        },
+    ];
+
+    const getStatusColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case "confirmed": return "bg-green-100 text-green-700 border-green-200";
+            case "pending": return "bg-orange-100 text-orange-700 border-orange-200";
+            case "completed": return "bg-blue-100 text-blue-700 border-blue-200";
+            case "cancelled": return "bg-red-100 text-red-700 border-red-200";
+            default: return "bg-slate-100 text-slate-700 border-slate-200";
+        }
+    };
 
     const filteredBookings = bookings.filter((booking) => {
         const matchesSearch =
-            booking.property.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            booking.renter.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            booking.id.toLowerCase().includes(searchTerm.toLowerCase());
+            booking.property?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            booking.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            booking._id.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesStatus = statusFilter === "all" ? true : booking.status.toLowerCase() === statusFilter;
-
+        const matchesStatus = statusFilter === "all" ? true : booking.status?.toLowerCase() === statusFilter;
         return matchesSearch && matchesStatus;
     });
-
-    const handleCancelBooking = (id) => {
-        setBookings(bookings.map(b => b.id === id ? { ...b, status: "Cancelled", paymentStatus: "Refunded" } : b));
-        toast({
-            title: "Booking Cancelled",
-            description: "The booking has been successfully cancelled.",
-        });
-    };
 
     return (
         <DashboardLayout role="admin">
@@ -191,7 +124,7 @@ const AdminBookings = () => {
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <Input
-                            placeholder="Search bookings, renters..."
+                            placeholder="Search by ID, property or renter..."
                             className="pl-10 bg-slate-50 border-slate-200 w-full"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -211,7 +144,6 @@ const AdminBookings = () => {
                     </Select>
                 </div>
 
-                {/* Bookings Table */}
                 <Card className="border-none shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-slate-600">
@@ -228,34 +160,34 @@ const AdminBookings = () => {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {filteredBookings.map((booking) => (
-                                    <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="p-4 pl-6 font-medium text-slate-900">
-                                            {booking.id}
+                                    <tr key={booking._id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="p-4 pl-6 font-medium text-slate-900 text-xs">
+                                            {booking._id.substring(0, 8)}...
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
-                                                    <img src={booking.image} alt={booking.property} className="w-full h-full object-cover" />
+                                                    <img src={booking.property?.images?.[0]} alt="" className="w-full h-full object-cover" />
                                                 </div>
-                                                <div className="max-w-[150px] truncate font-medium text-slate-900" title={booking.property}>
-                                                    {booking.property}
+                                                <div className="max-w-[150px] truncate font-medium text-slate-900">
+                                                    {booking.property?.title}
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <div className="text-slate-900 font-medium">{booking.renter}</div>
-                                            <div className="text-xs text-slate-500">Owner: {booking.owner}</div>
+                                            <div className="text-slate-900 font-medium">{booking.user?.name}</div>
+                                            <div className="text-xs text-slate-500">Owner: {booking.owner?.name}</div>
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-col text-xs">
-                                                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {booking.checkIn}</span>
-                                                <span className="flex items-center gap-1 text-slate-400">to {booking.checkOut}</span>
+                                                <span>{new Date(booking.startDate).toLocaleDateString()}</span>
+                                                <span className="text-slate-400">to {new Date(booking.endDate).toLocaleDateString()}</span>
                                             </div>
                                         </td>
                                         <td className="p-4 font-bold text-slate-900">
-                                            ${booking.amount}
-                                            <div className="text-xs font-normal text-slate-500 flex items-center gap-1 mt-0.5">
-                                                <CreditCard className="w-3 h-3" /> {booking.paymentStatus}
+                                            ${booking.totalAmount?.toLocaleString()}
+                                            <div className="text-xs font-normal text-slate-500 mt-0.5 capitalize">
+                                                {booking.paymentStatus}
                                             </div>
                                         </td>
                                         <td className="p-4">
@@ -266,19 +198,12 @@ const AdminBookings = () => {
                                         <td className="p-4 text-right pr-6">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100">
+                                                    <Button variant="ghost" size="icon">
                                                         <MoreVertical className="w-4 h-4 text-slate-400" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem>
-                                                        <Eye className="w-4 h-4 mr-2" /> View Details
-                                                    </DropdownMenuItem>
-                                                    {booking.status !== "Cancelled" && (
-                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleCancelBooking(booking.id)}>
-                                                            <Ban className="w-4 h-4 mr-2" /> Cancel Booking
-                                                        </DropdownMenuItem>
-                                                    )}
+                                                    <DropdownMenuItem><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>
